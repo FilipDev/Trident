@@ -24,6 +24,7 @@ import net.tridentsdk.api.threads.TaskExecutor;
 import net.tridentsdk.plugin.TridentPlugin;
 import net.tridentsdk.server.threads.ConcurrentTaskExecutor;
 import net.tridentsdk.server.threads.PluginThreads;
+import net.tridentsdk.server.updater.Updater;
 
 import java.util.Deque;
 import java.util.Iterator;
@@ -56,9 +57,11 @@ public class TridentScheduler implements Scheduler {
         }
     };
 
-    private static final Deque<TaskWrapper> taskList = new ConcurrentLinkedDeque<>();
+    private static final Updater updater = new Updater();
+
+    private static final Deque<TaskWrapper>                  taskList               = new ConcurrentLinkedDeque<>();
     private static final ConcurrentTaskExecutor<TaskWrapper> concurrentTaskExecutor = new ConcurrentTaskExecutor<>(2);
-    private static final ConcurrentTaskExecutor<TaskWrapper> taskQueue = new ConcurrentTaskExecutor<>(2);
+    private static final ConcurrentTaskExecutor<TaskWrapper> taskQueue              = new ConcurrentTaskExecutor<>(2);
 
     private static final AtomicReference<Iterator<TaskWrapper>> reverse = new AtomicReference<>();
     private static final AtomicReference<Iterator<TaskWrapper>> forward = new AtomicReference<>();
@@ -69,10 +72,12 @@ public class TridentScheduler implements Scheduler {
             TaskExecutor ex = executors.get(i);
             if (i % 2 == 0) {
                 ex.addTask(INVERSE_RUN);
-            } else {
+            }
+            else {
                 ex.addTask(FORWARD_RUN);
             }
         }
+        updater.update();
     }
 
     @Override
@@ -101,7 +106,7 @@ public class TridentScheduler implements Scheduler {
 
     @Override
     public TridentRunnable runTaskAsyncRepeating(final TridentPlugin plugin, final TridentRunnable runnable, long delay,
-            final long initialInterval) {
+                                                 final long initialInterval) {
         // Add repeating task later
         return this.runTaskAsyncLater(plugin, new TridentRunnable() {
             @Override
